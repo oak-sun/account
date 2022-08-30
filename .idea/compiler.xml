@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$PROJECT_DIR$/../.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.24/13a394eed5c4f9efb2a6d956e2086f1d81e857d9/lombok-1.18.24.jar" />
+        </processorPath>
+        <module name="Account_Service.Account_Service-task.main" />
+        <module name="Account_Service.Account_Service-task.test" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="17">
+      <module name="Account_Service.Account_Service-task-build-classes-java.main" target="11" />
+      <module name="Account_Service.Account_Service-task-build-generated-sources-annotationProcessor-java.main" target="11" />
+      <module name="Account_Service.Account_Service-task-build-generated-sources-headers-java.main" target="11" />
+      <module name="Account_Service.Account_Service-task-build-reports-tests.main" target="11" />
+      <module name="Account_Service.Account_Service-task-build-test-results.main" target="11" />
+      <module name="Account_Service.Account_Service-task-build-tmp.main" target="11" />
+      <module name="Account_Service.Account_Service-task.main" target="11" />
+      <module name="Account_Service.util.main" target="11" />
+    </bytecodeTargetLevel>
+  </component>
+</project>
