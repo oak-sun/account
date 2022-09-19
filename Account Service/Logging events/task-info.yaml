@@ -820,6 +820,215 @@ files:
 
     }
   learner_created: false
-feedback_link: https://hyperskill.org/projects/217/stages/1091/implement#comment
+- name: test/PaymentServiceImplTest.java
+  visible: true
+  text: |
+    import account.dao.PaymentDao;
+    import account.model.dto.PaymentDto;
+    import account.security.exception.DistinctPeriodException;
+    import account.service.payment.PaymentServiceImpl;
+    import account.service.user.UserService;
+    import org.junit.jupiter.api.BeforeEach;
+    import org.junit.jupiter.api.Test;
+    import org.junit.jupiter.api.extension.ExtendWith;
+    import org.mockito.InjectMocks;
+    import org.mockito.Mock;
+    import org.mockito.junit.jupiter.MockitoExtension;
+    import java.util.ArrayList;
+    import java.util.List;
+    import static org.junit.jupiter.api.Assertions.*;
+
+    @ExtendWith(MockitoExtension.class)
+    class PaymentServiceImplTest {
+
+        @Mock
+        UserService serviceU;
+        @Mock
+        PaymentDao paymentRepository;
+        @InjectMocks
+        PaymentServiceImpl serviceP;
+
+        ArrayList<PaymentDto> paymentsWithDistinctPeriodsAndPositiveSalary;
+        ArrayList<PaymentDto> paymentsWithoutDistinctPeriodsAndNegativeSalary;
+
+        @BeforeEach
+        void setUp() {
+
+            paymentsWithDistinctPeriodsAndPositiveSalary = new ArrayList<>(List.of(
+                    new PaymentDto("test@test.com", "01-2008", 1000L),
+                    new PaymentDto("test@test.com", "02-2008", 1000L),
+                    new PaymentDto("test@test.com", "03-2008", 1000L),
+                    new PaymentDto("test@test.com", "04-2008", 1000L),
+                    new PaymentDto("test@test.com", "05-2008", 1000L),
+                    new PaymentDto("test@test.com", "06-2008", 1000L),
+                    new PaymentDto("johndoe@acme.com", "01-2008", 1000L),
+                    new PaymentDto("johndoe@acme.com", "02-2008", 1000L),
+                    new PaymentDto("johndoe@acme.com", "03-2008", 1000L),
+                    new PaymentDto("johndoe@acme.com", "04-2008", 1000L)
+            ));
+
+            paymentsWithoutDistinctPeriodsAndNegativeSalary = new ArrayList<>(List.of(
+                    new PaymentDto("test@test.com", "01-2008", -1L),
+                    new PaymentDto("test@test.com", "02-2008", -1L),
+                    new PaymentDto("test@test.com", "04-2008", 1000L),
+                    new PaymentDto("test@test.com", "04-2008", 1000L),
+                    new PaymentDto("test@test.com", "05-2008", 1000L),
+                    new PaymentDto("test@test.com", "05-2008", 1000L),
+                    new PaymentDto("johndoe@acme.com", "01-2008", 1000L),
+                    new PaymentDto("johndoe@acme.com", "02-2008", 1000L),
+                    new PaymentDto("johndoe@acme.com", "03-2008", -1L),
+                    new PaymentDto("johndoe@acme.com", "03-2008", 1000L)
+            ));
+        }
+
+        @Test
+        void hasDistinctPeriods_ShouldBeTrue() {
+            assertTrue(serviceP
+                    .hasDistinctPeriods(
+                            paymentsWithDistinctPeriodsAndPositiveSalary));
+        }
+
+        @Test
+        void hasDistinctPeriods_ShouldThrowNoDistinctPeriodsException() {
+            assertThrows(DistinctPeriodException.class,
+                         () -> serviceP
+                                    .hasDistinctPeriods(
+                                            paymentsWithoutDistinctPeriodsAndNegativeSalary));
+        }
+
+
+        @Test
+        void hasPositiveSalary_ShouldBeTrue() {
+            assertTrue(serviceP
+                               .hasPositiveSalary(
+                                       paymentsWithDistinctPeriodsAndPositiveSalary.get(0)));
+        }
+
+        @Test
+        void hasPositiveSalary_ShouldBeFalse() {
+            assertFalse(serviceP
+                               .hasPositiveSalary(
+                                       paymentsWithoutDistinctPeriodsAndNegativeSalary.get(0)));
+        }
+    }
+  learner_created: false
+- name: test/PaymentMapperTest.java
+  visible: true
+  text: |
+    import account.model.Payment;
+    import account.model.User;
+    import account.model.dto.ResponsePaymentDto;
+    import account.model.mapper.PaymentMapper;
+    import org.junit.jupiter.api.BeforeEach;
+    import org.junit.jupiter.api.Test;
+    import java.time.LocalDate;
+    import java.time.YearMonth;
+    import java.time.format.DateTimeFormatter;
+    import static org.junit.jupiter.api.Assertions.*;
+
+
+    class PaymentMapperTest {
+        public static final String DATE_FORMATTER = "MM-yyyy";
+        PaymentMapper mapper;
+
+        @BeforeEach
+        void setUp() {
+            mapper = new PaymentMapper();
+        }
+
+        @Test
+        void paymentToPaymentResponseDto() {
+
+            var payment = new Payment(new User(),
+                                      LocalDate.from(YearMonth.parse("02-2008",
+                            DateTimeFormatter.ofPattern(DATE_FORMATTER)).atDay(1)),
+                    123456L);
+
+            var expectedPaymentResponseDto = new ResponsePaymentDto(null,
+                    null,
+                    "FEBRUARY-2008",
+                    "1234 dollar(s) 56 cent(s)");
+
+            var actualPaymentResponseDto =
+                    mapper.toPaymentResponseDto(payment);
+            assertEquals(expectedPaymentResponseDto,
+                         actualPaymentResponseDto);
+        }
+    }
+  learner_created: false
+- name: test/ErrorMessengerTest.java
+  visible: true
+  text: |
+    import account.security.exception.ErrorMessenger;
+    import org.junit.jupiter.api.Assertions;
+    import org.junit.jupiter.api.Test;
+
+    import java.time.LocalDateTime;
+
+    class ErrorMessengerTest {
+
+        @Test
+        void buildShouldReturnMessageWithFiveFields(){
+
+            var exceptedMessage = new ErrorMessenger(LocalDateTime.MIN,
+                     400,
+                    "someError",
+                    "someMessage",
+                    "/some/path");
+
+            var actualMessage =  ErrorMessenger.builder()
+                    .timestamp(LocalDateTime.MIN)
+                    .status(400)
+                    .error("someError")
+                    .message("someMessage")
+                    .path("/some/path")
+                    .build();
+            Assertions.assertEquals(exceptedMessage, actualMessage);
+        }
+    }
+  learner_created: false
+- name: test/TestReq.java
+  visible: true
+  text: |-
+    import com.fasterxml.jackson.annotation.JsonInclude;
+    import com.fasterxml.jackson.core.JsonProcessingException;
+    import com.fasterxml.jackson.databind.ObjectMapper;
+
+    import java.util.LinkedHashMap;
+    import java.util.Map;
+    import java.util.stream.Collectors;
+
+    class TestReq {
+
+        private Map<String, Object> properties = new LinkedHashMap<>();
+
+        // Deep copy
+        public TestReq(TestReq another) {
+            this.properties = another.properties.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
+
+        public TestReq() {
+        }
+
+        public String toJson() {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+            try {
+                return mapper.writeValueAsString(this.properties);
+            } catch (JsonProcessingException e) {
+                System.out.println(e.getMessage());
+                return null;
+            }
+        }
+
+        public TestReq setProps(String key, Object value) {
+            properties.put(key, value);
+            return this;
+        }
+
+    }
+  learner_created: false
+feedback_link: https://hyperskill.org/learn/step/16606#comment
 status: Unchecked
 record: -1

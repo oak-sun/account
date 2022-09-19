@@ -3,7 +3,7 @@ hyperskill_project:
   ide_files: https://stepik.org/media/attachments/lesson/612593/additional_files.json
   is_template_based: false
   use_ide: true
-update_date: Tue, 30 Aug 2022 04:56:21 UTC
+update_date: Fri, 16 Sep 2022 10:17:48 UTC
 stages:
 - id: 1086
   step: 16601
@@ -16,10 +16,10 @@ stages:
   is_completed: true
 - id: 1089
   step: 16604
-  is_completed: false
+  is_completed: true
 - id: 1090
   step: 16605
-  is_completed: false
+  is_completed: true
 - id: 1091
   step: 16606
   is_completed: false
@@ -40,12 +40,12 @@ topics:
     theory_id: 6633
   - title: HyperText Transfer Protocol
     theory_id: 6569
-  - title: HTTP URL
-    theory_id: 6740
   - title: Introduction to Spring Boot
     theory_id: 7944
   - title: Getting started with Spring Boot
     theory_id: 6336
+  - title: HTTP URL
+    theory_id: 6740
   - title: Basic project structure
     theory_id: 6339
   - title: IoC Container
@@ -56,6 +56,8 @@ topics:
     theory_id: 14652
   - title: '@Bean vs @Component'
     theory_id: 14771
+  - title: ApplicationContext
+    theory_id: 22062
   - title: Scopes of beans
     theory_id: 19487
   - title: Bean lifecycle
@@ -182,14 +184,22 @@ topics:
     theory_id: 13931
   - title: HTML basics
     theory_id: 6434
-  - title: Tags and Attributes
-    theory_id: 7536
-  - title: HTML page structure
-    theory_id: 6491
   - title: Libraries
     theory_id: 8504
   - title: Frameworks
     theory_id: 6701
+  - title: Tags and Attributes
+    theory_id: 7536
+  - title: HTML page structure
+    theory_id: 6491
+  - title: What is a bug
+    theory_id: 5504
+  - title: Functional testing
+    theory_id: 13438
+  - title: Unit testing
+    theory_id: 7545
+  - title: Dependency injection
+    theory_id: 20580
   - title: YAML
     theory_id: 12722
   - title: Interfaces
@@ -369,10 +379,10 @@ topics:
   - title: Object-Relational Mapping (ORM)
     theory_id: 8312
   5:
-  - title: The concept of patterns
-    theory_id: 3611
   - title: Logging in Spring Boot
     theory_id: 17457
+  - title: The concept of patterns
+    theory_id: 3611
   - title: Introduction to logging
     theory_id: 5538
   - title: Singleton

@@ -402,7 +402,7 @@ files:
         private String password;
     }
   learner_created: true
-- name: src/account/controllers/ApiController.java
+- name: src/account/controllers/ApiAuthController.java
   visible: true
   text: |
     package account.controllers;
@@ -437,7 +437,7 @@ files:
 - name: src/account/security/RestAuthenticationEntryPoint.java
   visible: true
   learner_created: true
-- name: src/account/security/WebSecurityConfigurerImpl.java
+- name: src/account/security/WebSecurity.java
   visible: true
   learner_created: true
 - name: src/account/security/UserDetailServiceImpl.java
@@ -446,7 +446,7 @@ files:
 - name: src/account/security/UserDetailImpl.java
   visible: true
   learner_created: true
-- name: src/account/controllers/Controller.java
+- name: src/account/controllers/PayController.java
   visible: true
   text: |
     package account.controllers;
@@ -473,7 +473,7 @@ files:
 - name: src/account/security/UserExistException.java
   visible: true
   learner_created: true
-feedback_link: https://hyperskill.org/projects/217/stages/1087/implement#comment
+feedback_link: https://hyperskill.org/learn/step/16602#comment
 status: Solved
 feedback:
   message: Congratulations!

@@ -632,7 +632,7 @@ files:
         }
     }
   learner_created: true
-- name: src/account/controllers/ApiController.java
+- name: src/account/controllers/ApiAuthController.java
   visible: true
   text: |
     package account.controllers;
@@ -693,7 +693,7 @@ files:
         Optional<User> findUserByEmail(String email);
     }
   learner_created: true
-- name: src/account/controllers/Controller.java
+- name: src/account/controllers/PayController.java
   visible: true
   text: |-
     package account.controllers;
@@ -759,7 +759,7 @@ files:
         }
     }
   learner_created: true
-- name: src/account/security/WebSecurityConfigurerImpl.java
+- name: src/account/security/WebSecurity.java
   visible: true
   text: |-
     package account.security;
@@ -900,7 +900,7 @@ files:
         String email;
     }
   learner_created: true
-feedback_link: https://hyperskill.org/projects/217/stages/1088/implement#comment
+feedback_link: https://hyperskill.org/learn/step/16603#comment
 status: Solved
 feedback:
   message: Congratulations!

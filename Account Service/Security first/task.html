@@ -10,13 +10,14 @@
 </ul>
 <p>At this stage, your need to implement the API for changing a user's password.</p>
 <p><code class="language-java">POST api/auth/changepass</code> is designed to change the password of a user who was successfully authenticated during a request. It must accept data in the JSON format and update a password to the one specified in the <code class="language-java">new_password</code> field. The old and new passwords must be different. A new password must meet the requirements listed above.</p>
-<p>[ALERT-warning]Since the <code class="language-java">bcrypt</code> hashing algorithm uses salt, it is impossible to compare the hashes of the new and old password directly, so use the "matches" method of the <code class="language-java">BCryptPasswordEncoder</code> class:</p>
+<p></p><div class="alert alert-warning">Since the <code class="language-java">bcrypt</code> hashing algorithm uses salt, it is impossible to compare the hashes of the new and old password directly, so use the "matches" method of the <code class="language-java">BCryptPasswordEncoder</code> class:
+
 <pre><code class="language-java">private final BCryptPasswordEncoder encoder;
 
 ....
 
 encoder.matches("new_password", hashOfOldPassword)</code></pre>
-<p>[/ALERT]</p>
+<p></p></div>
 <p>For testing purposes, here is the list of breached passwords:</p>
 <pre><code class="language-java">{"PasswordForJanuary", "PasswordForFebruary", "PasswordForMarch", "PasswordForApril",
  "PasswordForMay", "PasswordForJune", "PasswordForJuly", "PasswordForAugust",

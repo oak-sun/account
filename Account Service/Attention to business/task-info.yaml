@@ -39,6 +39,133 @@ files:
 
     }
   learner_created: false
+- name: src/account/security/WebSecurity.java
+  visible: true
+  text: |-
+    package account.security;
+
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.context.annotation.Bean;
+    import org.springframework.http.HttpMethod;
+    import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+    import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+    import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+    import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+    import org.springframework.security.config.http.SessionCreationPolicy;
+    import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+    import org.springframework.security.crypto.password.PasswordEncoder;
+
+    @EnableWebSecurity
+    public class WebSecurityConfigurerImpl extends WebSecurityConfigurerAdapter {
+        @Autowired
+        RestAuthenticationEntryPoint raep;
+        @Autowired
+        UserDetailServiceImpl udsimpl;
+
+        @Override
+        protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+            auth
+                    .userDetailsService(this.udsimpl)
+                    .passwordEncoder(getEncoder());
+        }
+
+        @Override
+        protected void configure(HttpSecurity http) throws Exception {
+            http
+                    .httpBasic()
+                    .authenticationEntryPoint(raep) // Handle auth error
+                    .and()
+                          .csrf()
+                          .disable()
+                          .headers()
+                          .frameOptions()
+                          .disable() // for Postman, the H2 console
+                    .and()
+                          .authorizeRequests() // manage access
+
+                          .mvcMatchers( "/api/auth/signup")
+                          .permitAll()
+
+                          .mvcMatchers(HttpMethod.POST, "/actuator/shutdown")
+                          .permitAll()
+
+                          .mvcMatchers("/**")
+                          .authenticated() // or .anyRequest().authenticated()
+                    // other matchers
+                    .and()
+                          .sessionManagement()
+                          .sessionCreationPolicy(SessionCreationPolicy.STATELESS); // no session
+        }
+
+        @Bean
+        public PasswordEncoder getEncoder() {
+            return new BCryptPasswordEncoder();
+        }
+    }
+  learner_created: true
+- name: src/account/security/AuthManager.java
+  visible: true
+  learner_created: true
+- name: src/account/security/ErrorMSG.java
+  visible: true
+  learner_created: true
+- name: src/account/security/AuthMessages.java
+  visible: true
+  learner_created: true
+- name: src/account/security/RouterConfigurer.java
+  visible: true
+  learner_created: true
+- name: src/account/dao/SalaryDao.java
+  visible: true
+  learner_created: true
+- name: src/account/dao/UserDao.java
+  visible: true
+  learner_created: true
+- name: src/account/model/records/request/RecordRequestSignup.java
+  visible: true
+  learner_created: true
+- name: src/account/model/records/request/RecordRequestChangePass.java
+  visible: true
+  learner_created: true
+- name: src/account/model/records/response/RecordResponseChangePass.java
+  visible: true
+  learner_created: true
+- name: src/account/model/records/response/RecordResponseSalary.java
+  visible: true
+  learner_created: true
+- name: src/account/model/records/response/RecordResponseSignup.java
+  visible: true
+  learner_created: true
+- name: src/account/model/records/response/RecordResponseStatus.java
+  visible: true
+  learner_created: true
+- name: src/account/model/records/request/RecordRequestSalary.java
+  visible: true
+  learner_created: true
+- name: src/account/model/Salary.java
+  visible: true
+  learner_created: true
+- name: src/resources/table.sql
+  visible: true
+  learner_created: true
+- name: src/account/model/User.java
+  visible: true
+  learner_created: true
+- name: src/resources/roles.sql
+  visible: true
+  learner_created: true
+- name: src/account/service/AccountService.java
+  visible: true
+  learner_created: true
+- name: src/account/service/AdminService.java
+  visible: true
+  learner_created: true
+- name: test/account/service/AccountServiceTest.java
+  visible: true
+  learner_created: true
+- name: test/account/service/AuthServiceTest.java
+  visible: true
+  learner_created: true
 - name: src/resources/application.properties
   visible: true
   text: |-
@@ -47,6 +174,21 @@ files:
     management.endpoint.shutdown.enabled=true
     spring.jackson.serialization.INDENT_OUTPUT=true
   learner_created: false
+- name: src/account/service/AuthService.java
+  visible: true
+  learner_created: true
+- name: test/JPAValidatorTest.java
+  visible: true
+  learner_created: true
+- name: test/AuthIntegrationTest.java
+  visible: true
+  learner_created: true
+- name: test/resources/application.properties
+  visible: true
+  learner_created: true
+- name: test/resources/data/account_template.mv.db
+  visible: true
+  learner_created: true
 - name: test/AccountServiceTest.java
   visible: false
   text: |-
@@ -709,501 +851,12 @@ files:
       };
     }
   learner_created: false
-- name: src/account/UserService.java
+- name: test/TestReq.java
   visible: true
-  text: |
-    package account;
-
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.stereotype.Service;
-    import java.util.Optional;
-
-    @Service
-    public class UserService {
-        @Autowired
-        UserDao dao;
-
-        public User save(User user) {
-            return dao.save(user);
-        }
-        public Optional<User> findUserByEmail(String email) {
-            return dao.findUserByEmail(email);
-        }
-    }
   learner_created: true
-- name: src/account/security/UserDetailImpl.java
-  visible: true
-  text: |
-    package account.security;
-
-    import account.User;
-    import lombok.Getter;
-    import org.springframework.security.core.GrantedAuthority;
-    import org.springframework.security.core.authority.SimpleGrantedAuthority;
-    import org.springframework.security.core.userdetails.UserDetails;
-    import java.util.Collection;
-    import java.util.List;
-
-    @Getter
-    public class UserDetailImpl implements UserDetails {
-        private final String username;
-        private final String password;
-        private final List<GrantedAuthority> grantedList;
-
-        public UserDetailImpl(User user) {
-            this.username = user
-                                .getEmail()
-                                .toLowerCase();
-            this.password = user.getPassword();
-            this.grantedList = List.of(
-                    new SimpleGrantedAuthority("USER"));
-        }
-
-
-        @Override
-        public Collection<? extends GrantedAuthority> getAuthorities() {
-            return this.grantedList;
-        }
-
-
-        @Override
-        public boolean isAccountNonExpired() {
-            return true;
-        }
-
-        @Override
-        public boolean isAccountNonLocked() {
-            return true;
-        }
-
-        @Override
-        public boolean isCredentialsNonExpired() {
-            return true;
-        }
-
-        @Override
-        public boolean isEnabled() {
-            return true;
-        }
-    }
-  learner_created: true
-- name: src/account/security/exception/HackerPasswordException.java
-  visible: true
-  text: |
-    package account.security.exception;
-
-    import org.springframework.http.HttpStatus;
-    import org.springframework.web.bind.annotation.ResponseStatus;
-
-    @ResponseStatus(code= HttpStatus.BAD_REQUEST,
-                    reason = "The password is in the hacker's database!")
-    public class HackerPasswordException extends RuntimeException{
-    }
-  learner_created: true
-- name: src/account/security/UserDetailServiceImpl.java
-  visible: true
-  text: |
-    package account.security;
-
-
-    import account.User;
-    import account.UserService;
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.security.core.userdetails.UserDetails;
-    import org.springframework.security.core.userdetails.UserDetailsService;
-    import org.springframework.security.core.userdetails.UsernameNotFoundException;
-    import org.springframework.stereotype.Service;
-    import java.util.Optional;
-
-    @Service
-    public class UserDetailServiceImpl implements UserDetailsService {
-        @Autowired
-        UserService service;
-
-        @Override
-        public UserDetails loadUserByUsername(String username)
-                           throws UsernameNotFoundException {
-
-            Optional<User> user = service.findUserByEmail(
-                                  username.toLowerCase());
-            if(user.isPresent()) {
-                return new UserDetailImpl(user.get());
-
-            } else {
-                throw new UsernameNotFoundException(
-                        "Not found: " + username);
-            }
-        }
-    }
-  learner_created: true
-- name: src/account/controllers/ApiController.java
-  visible: true
-  text: |-
-    package account.controllers;
-
-    import account.UserService;
-    import account.Password;
-    import account.User;
-    import account.security.exception.HackerPasswordException;
-    import account.security.exception.MinimumPasswordException;
-    import account.security.exception.SamePasswordException;
-    import account.security.exception.UserExistException;
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.http.HttpStatus;
-    import org.springframework.http.ResponseEntity;
-    import org.springframework.security.core.annotation.AuthenticationPrincipal;
-    import org.springframework.security.core.userdetails.UserDetails;
-    import org.springframework.security.crypto.password.PasswordEncoder;
-    import org.springframework.web.bind.annotation.*;
-    import javax.validation.Valid;
-    import java.util.HashMap;
-    import java.util.List;
-    import java.util.Map;
-    import java.util.Optional;
-
-    @RestController
-    @RequestMapping("api/auth")
-    public class ApiController {
-
-        @Autowired
-        UserService service;
-
-        @Autowired
-        PasswordEncoder encoder;
-
-        List<String> hackerPass = List.of(
-                "PasswordForJanuary",
-                          "PasswordForFebruary",
-                          "PasswordForMarch",
-                          "PasswordForApril",
-                          "PasswordForMay",
-                          "PasswordForJune",
-                          "PasswordForJuly",
-                          "PasswordForAugust",
-                          "PasswordForSeptember",
-                          "PasswordForOctober",
-                          "PasswordForNovember",
-                          "PasswordForDecember");
-
-        @PostMapping("signup")
-        public ResponseEntity<Object> signup(@Valid @RequestBody User user) {
-
-            if (hackerPass.contains(user.getPassword())) {
-                throw new HackerPasswordException();
-            }
-
-            if (user.getPassword().length() < 12) {
-                throw new MinimumPasswordException();
-            }
-            user.setPassword(encoder.encode(user.getPassword()));
-
-            if (service.findUserByEmail(user
-                                           .getEmail()
-                                           .toLowerCase())
-                                           .isPresent()) {
-                throw new UserExistException();
-            }
-
-            user.setEmail(user.getEmail().toLowerCase());
-            return new ResponseEntity<>(service.save(user),
-                                        HttpStatus.OK);
-        }
-
-        @PostMapping("changepass")
-        public ResponseEntity<Object> changePassword(@Valid @RequestBody Password newPassMap,
-                                                     @AuthenticationPrincipal
-                                                     UserDetails details) {
-            if (details != null) {
-                Optional<User> userOptional = service.findUserByEmail(details.getUsername());
-
-                if (userOptional.isPresent()) {
-
-                    var user = userOptional.get();
-                    var newPass = newPassMap.getNew_password();
-
-                    if (hackerPass.contains(newPass)) {
-                        throw new HackerPasswordException();
-                    }
-                    if (encoder.matches(newPass,
-                                        user.getPassword())){
-                        throw new SamePasswordException();
-                    }
-                    if (newPass.length() < 12) {
-                        throw new MinimumPasswordException();
-                    }
-
-                    user.setPassword(encoder.encode(newPass));
-                    service.save(user);
-                    Map<String, String> response = new HashMap<>();
-                    response.put("email", user.getEmail());
-                    response.put("status",
-                                     "The password has been updated successfully");
-                    return new ResponseEntity<>(response, HttpStatus.OK);
-                }
-            }
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-    }
-  learner_created: true
-- name: src/account/UserDao.java
-  visible: true
-  text: |
-    package account;
-
-    import org.springframework.data.repository.CrudRepository;
-    import org.springframework.stereotype.Repository;
-    import java.util.Optional;
-
-    @Repository
-    public interface UserDao extends CrudRepository<User, Long> {
-        Optional<User> findUserByEmail(String email);
-    }
-  learner_created: true
-- name: src/account/security/exception/UserExistException.java
-  visible: true
-  text: |-
-    package account.security.exception;
-
-    import org.springframework.http.HttpStatus;
-    import org.springframework.web.bind.annotation.ResponseStatus;
-
-    @ResponseStatus(code = HttpStatus.BAD_REQUEST,
-                    reason = "User exist!")
-    public class UserExistException extends RuntimeException{
-    }
-  learner_created: true
-- name: src/account/controllers/Controller.java
-  visible: true
-  text: |-
-    package account.controllers;
-
-    import account.User;
-    import account.UserService;
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.http.HttpStatus;
-    import org.springframework.http.ResponseEntity;
-    import org.springframework.security.core.annotation.AuthenticationPrincipal;
-    import org.springframework.security.core.userdetails.UserDetails;
-    import org.springframework.web.bind.annotation.GetMapping;
-    import org.springframework.web.bind.annotation.RestController;
-
-    import java.util.Optional;
-
-    @RestController
-    public class Controller {
-        @Autowired
-        UserService service;
-
-        @GetMapping("api/empl/payment")
-        public ResponseEntity<User> getEmployPayroll(@AuthenticationPrincipal
-                                                         UserDetails details) {
-
-            if (details != null) {
-                Optional<User> user = service
-                        .findUserByEmail(details.getUsername());
-
-                if (user.isPresent()) {
-                    return new ResponseEntity<>(user.get(),
-                                                HttpStatus.OK);
-                }
-            }
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        }
-
-    }
-  learner_created: true
-- name: src/account/User.java
-  visible: true
-  text: |-
-    package account;
-
-    import com.fasterxml.jackson.annotation.JsonIgnore;
-    import com.fasterxml.jackson.annotation.JsonProperty;
-    import lombok.AllArgsConstructor;
-    import lombok.Data;
-    import lombok.NoArgsConstructor;
-    import javax.persistence.*;
-    import javax.validation.constraints.NotBlank;
-    import javax.validation.constraints.NotNull;
-    import javax.validation.constraints.Pattern;
-
-    @Entity
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public class User {
-
-        @Id
-        @GeneratedValue(strategy = GenerationType.AUTO)
-        private Long id;
-
-        @Column
-        @JsonIgnore
-        private String role;
-
-        @Column
-        @NotNull
-        @NotBlank
-        String name;
-
-        @Column
-        @NotNull
-        @NotBlank
-        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-        String password;
-
-        @Column
-        @JsonIgnore
-        String new_password;
-        @Column
-        @NotNull
-        @NotBlank
-        String lastname;
-
-        @Column
-        @NotNull
-        @NotBlank
-        @Pattern(regexp = ".+@acme.com")
-        String email;
-    }
-  learner_created: true
-- name: src/account/security/RestAuthenticationEntryPoint.java
-  visible: true
-  text: |
-    package account.security;
-
-    import org.springframework.security.core.AuthenticationException;
-    import org.springframework.security.web.AuthenticationEntryPoint;
-    import org.springframework.stereotype.Service;
-
-    import javax.servlet.ServletException;
-    import javax.servlet.http.HttpServletRequest;
-    import javax.servlet.http.HttpServletResponse;
-    import java.io.IOException;
-
-    @Service
-    public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
-        @Override
-        public void commence(HttpServletRequest request,
-                             HttpServletResponse response,
-                             AuthenticationException authException)
-                throws IOException, ServletException {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                               authException.getMessage());
-        }
-    }
-  learner_created: true
-- name: src/account/security/WebSecurityConfigurerImpl.java
-  visible: true
-  text: |-
-    package account.security;
-
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.context.annotation.Bean;
-    import org.springframework.http.HttpMethod;
-    import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-    import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-    import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-    import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-    import org.springframework.security.config.http.SessionCreationPolicy;
-    import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-    import org.springframework.security.crypto.password.PasswordEncoder;
-
-    @EnableWebSecurity
-    public class WebSecurityConfigurerImpl extends WebSecurityConfigurerAdapter {
-        @Autowired
-        RestAuthenticationEntryPoint raep;
-        @Autowired
-        UserDetailServiceImpl udsimpl;
-
-        @Override
-        protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-            auth
-                    .userDetailsService(this.udsimpl)
-                    .passwordEncoder(getEncoder());
-        }
-
-        @Override
-        protected void configure(HttpSecurity http) throws Exception {
-            http
-                    .httpBasic()
-                    .authenticationEntryPoint(raep) // Handle auth error
-                    .and()
-                          .csrf()
-                          .disable()
-                          .headers()
-                          .frameOptions()
-                          .disable() // for Postman, the H2 console
-                    .and()
-                          .authorizeRequests() // manage access
-
-                          .mvcMatchers( "/api/auth/signup")
-                          .permitAll()
-
-                          .mvcMatchers(HttpMethod.POST, "/actuator/shutdown")
-                          .permitAll()
-
-                          .mvcMatchers("/**")
-                          .authenticated() // or .anyRequest().authenticated()
-                    // other matchers
-                    .and()
-                          .sessionManagement()
-                          .sessionCreationPolicy(SessionCreationPolicy.STATELESS); // no session
-        }
-
-        @Bean
-        public PasswordEncoder getEncoder() {
-            return new BCryptPasswordEncoder();
-        }
-    }
-  learner_created: true
-- name: src/account/security/exception/MinimumPasswordException.java
-  visible: true
-  text: |
-    package account.security.exception;
-
-    import org.springframework.http.HttpStatus;
-    import org.springframework.web.bind.annotation.ResponseStatus;
-
-    @ResponseStatus(code = HttpStatus.BAD_REQUEST,
-                    reason = "Password length must be 12 chars minimum!")
-    public class MinimumPasswordException extends RuntimeException {
-    }
-  learner_created: true
-- name: src/account/security/exception/SamePasswordException.java
-  visible: true
-  text: |-
-    package account.security.exception;
-
-    import org.springframework.http.HttpStatus;
-    import org.springframework.web.bind.annotation.ResponseStatus;
-
-    @ResponseStatus(code = HttpStatus.BAD_REQUEST,
-                    reason = "The passwords must be different!")
-    public class SamePasswordException extends RuntimeException {
-    }
-  learner_created: true
-- name: src/account/Password.java
-  visible: true
-  text: |
-    package account;
-
-    import lombok.AllArgsConstructor;
-    import lombok.Data;
-    import lombok.NoArgsConstructor;
-    import javax.validation.constraints.NotBlank;
-    import javax.validation.constraints.NotNull;
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public class Password {
-
-        @NotNull
-        @NotBlank
-        String new_password;
-    }
-  learner_created: true
-feedback_link: https://hyperskill.org/projects/217/stages/1089/implement#comment
-status: Unchecked
-record: -1
+feedback_link: https://hyperskill.org/learn/step/16604#comment
+status: Solved
+feedback:
+  message: Congratulations!
+  time: Mon, 12 Sep 2022 23:33:34 UTC
+record: 4
