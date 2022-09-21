@@ -47,7 +47,7 @@ public class AuthMessages {
             "PasswordForOctober",
             "PasswordForNovember",
             "PasswordForDecember");
-    public static final int BCRYPT_STRENGTH = 13;
+    public static final int BCRYPT_STRENGTH = 7;
     public static final int MIN_PASSWORD_LENGTH = 12;
     public static final String EMAIL_REGEX = "(?i)\\w+(\\.\\w+){0,2}@acme.com";
     public static final String USER_EXISTS_ERRORMSG = "User exist!";

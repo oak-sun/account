@@ -1159,145 +1159,6 @@ files:
         }
     }
   learner_created: true
-- name: src/account/security/Logger.java
-  visible: true
-  text: |-
-    package account.security;
-
-    import account.dao.AuditDao;
-    import account.model.Audit;
-    import account.model.records.request.RecordRequestRole;
-    import account.model.records.request.RecordRequestUserLock;
-    import lombok.AllArgsConstructor;
-    import org.springframework.stereotype.Component;
-    import reactor.core.publisher.Mono;
-
-    @Component
-    @AllArgsConstructor
-    public class Logger {
-
-        private final AuditDao dao;
-
-        public Mono<Audit> logCreateUser(String newUser) {
-            return dao.save(Audit
-                                   .builder()
-                                   .action("CREATE_USER")
-                            .subject("Anonymous")
-                            .object(newUser)
-                            .path("/api/auth/signup")
-                            .build());
-        }
-
-        public Mono<Audit> logToggleRole(String admin,
-                                         RecordRequestRole record) {
-            var action = record
-                                .operation()
-                                .toUpperCase() +
-                                "_ROLE";
-            var role = record
-                                    .role()
-                                    .toUpperCase();
-            var object = record
-                                     .operation()
-                                     .equalsIgnoreCase("GRANT")
-                    ?
-                    "Grant role %s to %s"
-                                        .formatted(role, record.user())
-                    :
-                    "Remove role %s from %s"
-                                           .formatted(role, record.user());
-            return dao.save(Audit
-                                   .builder()
-                                   .action(action)
-                                   .subject(admin)
-                                   .object(object)
-                                   .path("/api/admin/user/role")
-                                   .build());
-        }
-
-        public Mono<Audit> logToggleUserLock(String admin,
-                                             RecordRequestUserLock record) {
-            var action = record
-                              .operation()
-                              .toUpperCase() +
-                              "_USER";
-            var object = record
-                                     .operation()
-                                     .equalsIgnoreCase("LOCK")
-                    ?
-                    "Lock user %s"
-                                 .formatted(record.user())
-                    : "Unlock user %s"
-                                     .formatted(record.user());
-            return dao.save(Audit
-                                  .builder()
-                                  .action(action)
-                                  .subject(admin)
-                                  .object(object)
-                                  .path("/api/admin/user/access")
-                                  .build());
-        }
-
-        public Mono<Audit> logDeleteUser(String admin, String user) {
-            return dao.save(Audit
-                                .builder()
-                                .action("DELETE_USER")
-                                .subject(admin)
-                                .object(user)
-                                .path("/api/admin/user")
-                    .build());
-        }
-
-        public Mono<Audit> logChangePassword(String email) {
-            return dao.save(Audit
-                                .builder()
-                                .action("CHANGE_PASSWORD")
-                                .subject(email)
-                                .object(email)
-                                .path("/api/auth/changepass")
-                                .build());
-        }
-
-        public Mono<Audit> logAccessDenied(String user, String path) {
-            return dao.save(Audit
-                                .builder()
-                                .action("ACCESS_DENIED")
-                                .subject(user)
-                                .object(path)
-                                .path(path)
-                                .build());
-        }
-
-        public Mono<Audit> logFailedUser(String user, String path) {
-            return dao.save(Audit
-                                .builder()
-                                .action("LOGIN_FAILED")
-                                .subject(user)
-                                .object(path)
-                                .path(path)
-                                .build());
-        }
-
-        public Mono<Audit> logBruteForce(String user, String path) {
-            return dao.save(Audit
-                                 .builder()
-                                 .action("BRUTE_FORCE")
-                                 .subject(user)
-                                 .object(path)
-                                .path(path)
-                                .build())
-                    .then(
-                            dao.save(Audit
-                                          .builder()
-                                          .action("LOCK_USER")
-                                          .subject(user)
-                                          .object("Lock user %s"
-                                                              .formatted(user))
-                                          .path(path)
-                                          .build()));
-        }
-    }
-  learner_created: true
 - name: src/account/model/records/request/RecordRequestSignup.java
   visible: true
   text: |-
@@ -1514,50 +1375,6 @@ files:
                                       String path) {
     }
   learner_created: true
-- name: src/account/security/AccessHandler.java
-  visible: true
-  text: |
-    package account.security;
-
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.http.HttpStatus;
-    import org.springframework.security.access.AccessDeniedException;
-    import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler;
-    import org.springframework.stereotype.Component;
-    import org.springframework.web.server.ResponseStatusException;
-    import org.springframework.web.server.ServerWebExchange;
-    import reactor.core.publisher.Mono;
-
-    @Component
-    public class AccessHandler implements ServerAccessDeniedHandler {
-        private final Logger logger;
-
-        @Autowired
-        public AccessHandler(Logger logger) {
-            this.logger = logger;
-        }
-
-        @Override
-        public Mono<Void> handle(ServerWebExchange exchange,
-                                 AccessDeniedException denied) {
-            return exchange
-                    .getPrincipal()
-                    .flatMap(user ->
-                                logger.logAccessDenied(
-                                                user.getName(),
-                                                exchange
-                                                     .getRequest()
-                                                     .getPath()
-                                                     .value()))
-
-                    .flatMap(secEvent -> Mono.error(
-                                    new ResponseStatusException(
-                                            HttpStatus.FORBIDDEN,
-                                            denied.getMessage() +
-                                                    "!")));
-        }
-    }
-  learner_created: true
 - name: src/account/model/Role.java
   visible: true
   text: |
@@ -1618,94 +1435,6 @@ files:
                                           @NotEmpty
                                           @JsonProperty("new_password")
                                           String newPassword) {
-    }
-  learner_created: true
-- name: src/account/security/RouterConfigurer.java
-  visible: true
-  text: |
-    package account.security;
-
-    import account.service.AccountService;
-    import account.service.AdminService;
-    import account.service.AuditService;
-    import account.service.AuthService;
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.context.annotation.Bean;
-    import org.springframework.context.annotation.Configuration;
-    import org.springframework.web.reactive.function.server.RouterFunction;
-    import org.springframework.web.reactive.function.server.ServerResponse;
-    import static org.springframework.web.reactive.function.server
-                                                  .RouterFunctions.route;
-
-    @Configuration
-    public class RouterConfigurer {
-        @Bean
-        @Autowired
-        public RouterFunction<ServerResponse> routes(AuthService auth,
-                                                     AccountService account,
-                                                     AdminService admin,
-                                                     AuditService audit) {
-            return route()
-                    .add(authenticationRoutes(auth))
-                    .add(accountRoutes(account))
-                    .add(adminRoutes(admin))
-                    .add(auditRoutes(audit))
-                    .build();
-        }
-        private RouterFunction<ServerResponse> auditRoutes(AuditService audit) {
-            return route()
-                          .GET("/api/security/events",
-                                  audit::getAuditEvents)
-                          .build();
-        }
-        private RouterFunction<ServerResponse> authenticationRoutes(AuthService auth) {
-            return route()
-                         .POST("/api/auth/signup",
-                                 auth::signup)
-                         .POST("/api/auth/changepass",
-                                 auth::changePassword)
-                         .build();
-        }
-        private RouterFunction<ServerResponse> adminRoutes(AdminService admin) {
-            return route()
-                         .GET("/api/admin/user",
-                                 admin::displayUsers)
-                         .DELETE("/api/admin/user/{email}",
-                                  admin::deleteUser)
-                         .PUT("/api/admin/user/role", admin::toggleRole)
-                         .PUT("/api/admin/user/access", admin::toggleUserLock)
-                         .build();
-        }
-
-        private RouterFunction<ServerResponse> accountRoutes(
-                                                             AccountService account) {
-            return route()
-                         .GET("/api/empl/payment",
-                               account::accessPayrolls)
-                         .POST("/api/acct/payments",
-                                 account::uploadPayrolls)
-                        .PUT("/api/acct/payments",
-                                account::changePayrolls)
-                        .build();
-        }
-    }
-  learner_created: true
-- name: src/account/security/BadCredentialException.java
-  visible: true
-  text: |
-    package account.security;
-
-    import lombok.Getter;
-    import org.springframework.security.authentication.BadCredentialsException;
-    @Getter
-    public class BadCredentialException extends
-                                             BadCredentialsException {
-        private final String user;
-        public BadCredentialException(String message,
-                                      String user) {
-            super(message);
-            this.user = user;
-        }
     }
   learner_created: true
 - name: src/account/dao/UserDao.java
@@ -1889,114 +1618,6 @@ files:
         }
     }
   learner_created: true
-- name: src/account/security/AuthManager.java
-  visible: true
-  text: |
-    package account.security;
-
-    import org.springframework.beans.factory.annotation.Autowired;
-    import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
-    import org.springframework.security.core.Authentication;
-    import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
-    import org.springframework.security.crypto.password.PasswordEncoder;
-    import org.springframework.stereotype.Component;
-    import reactor.core.publisher.Mono;
-    import static account.security.messages.AuthMessages.*;
-
-    @Component
-    public class AuthManager extends
-                              UserDetailsRepositoryReactiveAuthenticationManager {
-        private final Protector protector;
-
-        @Autowired
-        public AuthManager(ReactiveUserDetailsService service,
-                           PasswordEncoder encoder,
-                           Protector protector) {
-            super(service);
-            setPasswordEncoder(encoder);
-            this.protector = protector;
-        }
-
-        @Override
-        public Mono<Authentication> authenticate(Authentication authentication) {
-            if (passwordIsHacked(
-                    (String) authentication.getCredentials())) {
-                return Mono.error(
-                        new BadCredentialException(
-                                PASSWORD_HACKED_ERRORMSG + " Please change!",
-                        authentication.getName()));
-            }
-            return super.authenticate(authentication)
-                    .doOnSuccess(auth -> protector
-                                               .resetUserFailures(auth.getName()))
-                    .onErrorMap(ex ->
-                            new BadCredentialException(
-                                    ex.getMessage(),
-                                    authentication.getName()));
-        }
-    }
-  learner_created: true
-- name: src/account/security/Protector.java
-  visible: true
-  text: |
-    package account.security;
-
-    import account.dao.UserDao;
-    import account.model.Audit;
-    import account.model.User;
-    import lombok.AllArgsConstructor;
-    import org.springframework.stereotype.Component;
-    import reactor.core.publisher.Mono;
-    import static account.security.messages.AdminMessages.LOGIN_FAILED_LIMIT;
-
-    @Component
-    @AllArgsConstructor
-    public class Protector {
-
-        private final Logger logger;
-        private final UserDao dao;
-
-        public Mono<Audit> handleUserFail(String email, String path) {
-            return dao
-                    .findByEmail(email)
-                    .defaultIfEmpty(User.unknown())
-                    .flatMap(user ->
-                            checkFailedAttemptsAndHandle(user, path));
-        }
-
-        public void resetUserFailures(String email) {
-            dao
-                    .findByEmail(email)
-                    .flatMap(user -> dao.save(
-                                        user.setFailedLogins(0)))
-                    .subscribe();
-        }
-
-        private Mono<Audit> checkFailedAttemptsAndHandle(User user,
-                                                         String path) {
-            if (user.isUnknown() ||
-                    user.isAccountLocked()) {
-                return logger
-                        .logFailedUser(user.getEmail(),
-                                        path);
-            }
-            user.setFailedLogins(
-                    user.getFailedLogins() + 1);
-            if (user.getFailedLogins() < LOGIN_FAILED_LIMIT) {
-                return dao
-                        .save(user)
-                        .then(logger.logFailedUser(
-                                user.getEmail(), path));
-            }
-            return dao
-                    .toggleLock(user.getEmail(), true)
-                    .then(logger.logFailedUser(
-                                 user.getEmail(), path))
-                    .then(logger.logBruteForce(
-                                 user.getEmail(), path));
-        }
-    }
-  learner_created: true
 - name: src/account/model/records/request/RecordRequestSalary.java
   visible: true
   text: |-
@@ -2082,173 +1703,392 @@ files:
 
     }
   learner_created: false
-- name: test/PaymentMapperTest.java
+- name: src/account/security/auth/Logger.java
+  visible: true
+  text: |-
+    package account.security;
+
+    import account.dao.AuditDao;
+    import account.model.Audit;
+    import account.model.records.request.RecordRequestRole;
+    import account.model.records.request.RecordRequestUserLock;
+    import lombok.AllArgsConstructor;
+    import org.springframework.stereotype.Component;
+    import reactor.core.publisher.Mono;
+
+    @Component
+    @AllArgsConstructor
+    public class Logger {
+
+        private final AuditDao dao;
+
+        public Mono<Audit> logCreateUser(String newUser) {
+            return dao.save(Audit
+                                   .builder()
+                                   .action("CREATE_USER")
+                            .subject("Anonymous")
+                            .object(newUser)
+                            .path("/api/auth/signup")
+                            .build());
+        }
+
+        public Mono<Audit> logToggleRole(String admin,
+                                         RecordRequestRole record) {
+            var action = record
+                                .operation()
+                                .toUpperCase() +
+                                "_ROLE";
+            var role = record
+                                    .role()
+                                    .toUpperCase();
+            var object = record
+                                     .operation()
+                                     .equalsIgnoreCase("GRANT")
+                    ?
+                    "Grant role %s to %s"
+                                        .formatted(role, record.user())
+                    :
+                    "Remove role %s from %s"
+                                           .formatted(role, record.user());
+            return dao.save(Audit
+                                   .builder()
+                                   .action(action)
+                                   .subject(admin)
+                                   .object(object)
+                                   .path("/api/admin/user/role")
+                                   .build());
+        }
+
+        public Mono<Audit> logToggleUserLock(String admin,
+                                             RecordRequestUserLock record) {
+            var action = record
+                              .operation()
+                              .toUpperCase() +
+                              "_USER";
+            var object = record
+                                     .operation()
+                                     .equalsIgnoreCase("LOCK")
+                    ?
+                    "Lock user %s"
+                                 .formatted(record.user())
+                    : "Unlock user %s"
+                                     .formatted(record.user());
+            return dao.save(Audit
+                                  .builder()
+                                  .action(action)
+                                  .subject(admin)
+                                  .object(object)
+                                  .path("/api/admin/user/access")
+                                  .build());
+        }
+
+        public Mono<Audit> logDeleteUser(String admin, String user) {
+            return dao.save(Audit
+                                .builder()
+                                .action("DELETE_USER")
+                                .subject(admin)
+                                .object(user)
+                                .path("/api/admin/user")
+                    .build());
+        }
+
+        public Mono<Audit> logChangePassword(String email) {
+            return dao.save(Audit
+                                .builder()
+                                .action("CHANGE_PASSWORD")
+                                .subject(email)
+                                .object(email)
+                                .path("/api/auth/changepass")
+                                .build());
+        }
+
+        public Mono<Audit> logAccessDenied(String user, String path) {
+            return dao.save(Audit
+                                .builder()
+                                .action("ACCESS_DENIED")
+                                .subject(user)
+                                .object(path)
+                                .path(path)
+                                .build());
+        }
+
+        public Mono<Audit> logFailedUser(String user, String path) {
+            return dao.save(Audit
+                                .builder()
+                                .action("LOGIN_FAILED")
+                                .subject(user)
+                                .object(path)
+                                .path(path)
+                                .build());
+        }
+
+        public Mono<Audit> logBruteForce(String user, String path) {
+            return dao.save(Audit
+                                 .builder()
+                                 .action("BRUTE_FORCE")
+                                 .subject(user)
+                                 .object(path)
+                                .path(path)
+                                .build())
+                    .then(
+                            dao.save(Audit
+                                          .builder()
+                                          .action("LOCK_USER")
+                                          .subject(user)
+                                          .object("Lock user %s"
+                                                              .formatted(user))
+                                          .path(path)
+                                          .build()));
+        }
+    }
+  learner_created: true
+- name: src/account/security/auth/ServerAuthEntryPoint.java
+  visible: true
+  learner_created: true
+- name: src/account/security/auth/AuthManager.java
   visible: true
   text: |
-    import account.model.Payment;
+    package account.security;
+
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
+    import org.springframework.security.core.Authentication;
+    import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+    import org.springframework.security.crypto.password.PasswordEncoder;
+    import org.springframework.stereotype.Component;
+    import reactor.core.publisher.Mono;
+    import static account.security.messages.AuthMessages.*;
+
+    @Component
+    public class AuthManager extends
+                              UserDetailsRepositoryReactiveAuthenticationManager {
+        private final Protector protector;
+
+        @Autowired
+        public AuthManager(ReactiveUserDetailsService service,
+                           PasswordEncoder encoder,
+                           Protector protector) {
+            super(service);
+            setPasswordEncoder(encoder);
+            this.protector = protector;
+        }
+
+        @Override
+        public Mono<Authentication> authenticate(Authentication authentication) {
+            if (passwordIsHacked(
+                    (String) authentication.getCredentials())) {
+                return Mono.error(
+                        new BadCredentialException(
+                                PASSWORD_HACKED_ERRORMSG + " Please change!",
+                        authentication.getName()));
+            }
+            return super.authenticate(authentication)
+                    .doOnSuccess(auth -> protector
+                                               .resetUserFailures(auth.getName()))
+                    .onErrorMap(ex ->
+                            new BadCredentialException(
+                                    ex.getMessage(),
+                                    authentication.getName()));
+        }
+    }
+  learner_created: true
+- name: src/account/security/auth/AccessHandler.java
+  visible: true
+  text: |
+    package account.security;
+
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.http.HttpStatus;
+    import org.springframework.security.access.AccessDeniedException;
+    import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler;
+    import org.springframework.stereotype.Component;
+    import org.springframework.web.server.ResponseStatusException;
+    import org.springframework.web.server.ServerWebExchange;
+    import reactor.core.publisher.Mono;
+
+    @Component
+    public class AccessHandler implements ServerAccessDeniedHandler {
+        private final Logger logger;
+
+        @Autowired
+        public AccessHandler(Logger logger) {
+            this.logger = logger;
+        }
+
+        @Override
+        public Mono<Void> handle(ServerWebExchange exchange,
+                                 AccessDeniedException denied) {
+            return exchange
+                    .getPrincipal()
+                    .flatMap(user ->
+                                logger.logAccessDenied(
+                                                user.getName(),
+                                                exchange
+                                                     .getRequest()
+                                                     .getPath()
+                                                     .value()))
+
+                    .flatMap(secEvent -> Mono.error(
+                                    new ResponseStatusException(
+                                            HttpStatus.FORBIDDEN,
+                                            denied.getMessage() +
+                                                    "!")));
+        }
+    }
+  learner_created: true
+- name: src/account/security/Protector.java
+  visible: true
+  text: |
+    package account.security;
+
+    import account.dao.UserDao;
+    import account.model.Audit;
     import account.model.User;
-    import account.model.dto.ResponsePaymentDto;
-    import account.model.mapper.PaymentMapper;
-    import org.junit.jupiter.api.BeforeEach;
-    import org.junit.jupiter.api.Test;
-    import java.time.LocalDate;
-    import java.time.YearMonth;
-    import java.time.format.DateTimeFormatter;
-    import static org.junit.jupiter.api.Assertions.*;
+    import lombok.AllArgsConstructor;
+    import org.springframework.stereotype.Component;
+    import reactor.core.publisher.Mono;
+    import static account.security.messages.AdminMessages.LOGIN_FAILED_LIMIT;
 
+    @Component
+    @AllArgsConstructor
+    public class Protector {
 
-    class PaymentMapperTest {
-        public static final String DATE_FORMATTER = "MM-yyyy";
-        PaymentMapper mapper;
+        private final Logger logger;
+        private final UserDao dao;
 
-        @BeforeEach
-        void setUp() {
-            mapper = new PaymentMapper();
+        public Mono<Audit> handleUserFail(String email, String path) {
+            return dao
+                    .findByEmail(email)
+                    .defaultIfEmpty(User.unknown())
+                    .flatMap(user ->
+                            checkFailedAttemptsAndHandle(user, path));
         }
 
-        @Test
-        void paymentToPaymentResponseDto() {
+        public void resetUserFailures(String email) {
+            dao
+                    .findByEmail(email)
+                    .flatMap(user -> dao.save(
+                                        user.setFailedLogins(0)))
+                    .subscribe();
+        }
 
-            var payment = new Payment(new User(),
-                                      LocalDate.from(YearMonth.parse("02-2008",
-                            DateTimeFormatter.ofPattern(DATE_FORMATTER)).atDay(1)),
-                    123456L);
-
-            var expectedPaymentResponseDto = new ResponsePaymentDto(null,
-                    null,
-                    "FEBRUARY-2008",
-                    "1234 dollar(s) 56 cent(s)");
-
-            var actualPaymentResponseDto =
-                    mapper.toPaymentResponseDto(payment);
-            assertEquals(expectedPaymentResponseDto,
-                         actualPaymentResponseDto);
+        private Mono<Audit> checkFailedAttemptsAndHandle(User user,
+                                                         String path) {
+            if (user.isUnknown() ||
+                    user.isAccountLocked()) {
+                return logger
+                        .logFailedUser(user.getEmail(),
+                                        path);
+            }
+            user.setFailedLogins(
+                    user.getFailedLogins() + 1);
+            if (user.getFailedLogins() < LOGIN_FAILED_LIMIT) {
+                return dao
+                        .save(user)
+                        .then(logger.logFailedUser(
+                                user.getEmail(), path));
+            }
+            return dao
+                    .toggleLock(user.getEmail(), true)
+                    .then(logger.logFailedUser(
+                                 user.getEmail(), path))
+                    .then(logger.logBruteForce(
+                                 user.getEmail(), path));
         }
     }
-  learner_created: false
-- name: test/ErrorMessengerTest.java
+  learner_created: true
+- name: src/account/security/auth/BadCredentialException.java
   visible: true
   text: |
-    import account.security.exception.ErrorMessenger;
-    import org.junit.jupiter.api.Assertions;
-    import org.junit.jupiter.api.Test;
+    package account.security;
 
-    import java.time.LocalDateTime;
+    import lombok.Getter;
+    import org.springframework.security.authentication.BadCredentialsException;
+    @Getter
+    public class BadCredentialException extends
+                                             BadCredentialsException {
+        private final String user;
+        public BadCredentialException(String message,
+                                      String user) {
+            super(message);
+            this.user = user;
+        }
+    }
+  learner_created: true
+- name: src/account/security/RouterConfigurer.java
+  visible: true
+  text: |
+    package account.security;
 
-    class ErrorMessengerTest {
+    import account.service.AccountService;
+    import account.service.AdminService;
+    import account.service.AuditService;
+    import account.service.AuthService;
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.context.annotation.Bean;
+    import org.springframework.context.annotation.Configuration;
+    import org.springframework.web.reactive.function.server.RouterFunction;
+    import org.springframework.web.reactive.function.server.ServerResponse;
+    import static org.springframework.web.reactive.function.server
+                                                  .RouterFunctions.route;
 
-        @Test
-        void buildShouldReturnMessageWithFiveFields(){
-
-            var exceptedMessage = new ErrorMessenger(LocalDateTime.MIN,
-                     400,
-                    "someError",
-                    "someMessage",
-                    "/some/path");
-
-            var actualMessage =  ErrorMessenger.builder()
-                    .timestamp(LocalDateTime.MIN)
-                    .status(400)
-                    .error("someError")
-                    .message("someMessage")
-                    .path("/some/path")
+    @Configuration
+    public class RouterConfigurer {
+        @Bean
+        @Autowired
+        public RouterFunction<ServerResponse> routes(AuthService auth,
+                                                     AccountService account,
+                                                     AdminService admin,
+                                                     AuditService audit) {
+            return route()
+                    .add(authenticationRoutes(auth))
+                    .add(accountRoutes(account))
+                    .add(adminRoutes(admin))
+                    .add(auditRoutes(audit))
                     .build();
-            Assertions.assertEquals(exceptedMessage, actualMessage);
+        }
+        private RouterFunction<ServerResponse> auditRoutes(AuditService audit) {
+            return route()
+                          .GET("/api/security/events",
+                                  audit::getAuditEvents)
+                          .build();
+        }
+        private RouterFunction<ServerResponse> authenticationRoutes(AuthService auth) {
+            return route()
+                         .POST("/api/auth/signup",
+                                 auth::signup)
+                         .POST("/api/auth/changepass",
+                                 auth::changePassword)
+                         .build();
+        }
+        private RouterFunction<ServerResponse> adminRoutes(AdminService admin) {
+            return route()
+                         .GET("/api/admin/user",
+                                 admin::displayUsers)
+                         .DELETE("/api/admin/user/{email}",
+                                  admin::deleteUser)
+                         .PUT("/api/admin/user/role", admin::toggleRole)
+                         .PUT("/api/admin/user/access", admin::toggleUserLock)
+                         .build();
+        }
+
+        private RouterFunction<ServerResponse> accountRoutes(
+                                                             AccountService account) {
+            return route()
+                         .GET("/api/empl/payment",
+                               account::accessPayrolls)
+                         .POST("/api/acct/payments",
+                                 account::uploadPayrolls)
+                        .PUT("/api/acct/payments",
+                                account::changePayrolls)
+                        .build();
         }
     }
-  learner_created: false
-- name: test/PaymentServiceImplTest.java
-  visible: true
-  text: |
-    import account.dao.PaymentDao;
-    import account.model.dto.PaymentDto;
-    import account.security.exception.DistinctPeriodException;
-    import account.service.payment.PaymentServiceImpl;
-    import account.service.user.UserService;
-    import org.junit.jupiter.api.BeforeEach;
-    import org.junit.jupiter.api.Test;
-    import org.junit.jupiter.api.extension.ExtendWith;
-    import org.mockito.InjectMocks;
-    import org.mockito.Mock;
-    import org.mockito.junit.jupiter.MockitoExtension;
-    import java.util.ArrayList;
-    import java.util.List;
-    import static org.junit.jupiter.api.Assertions.*;
-
-    @ExtendWith(MockitoExtension.class)
-    class PaymentServiceImplTest {
-
-        @Mock
-        UserService serviceU;
-        @Mock
-        PaymentDao paymentRepository;
-        @InjectMocks
-        PaymentServiceImpl serviceP;
-
-        ArrayList<PaymentDto> paymentsWithDistinctPeriodsAndPositiveSalary;
-        ArrayList<PaymentDto> paymentsWithoutDistinctPeriodsAndNegativeSalary;
-
-        @BeforeEach
-        void setUp() {
-
-            paymentsWithDistinctPeriodsAndPositiveSalary = new ArrayList<>(List.of(
-                    new PaymentDto("test@test.com", "01-2008", 1000L),
-                    new PaymentDto("test@test.com", "02-2008", 1000L),
-                    new PaymentDto("test@test.com", "03-2008", 1000L),
-                    new PaymentDto("test@test.com", "04-2008", 1000L),
-                    new PaymentDto("test@test.com", "05-2008", 1000L),
-                    new PaymentDto("test@test.com", "06-2008", 1000L),
-                    new PaymentDto("johndoe@acme.com", "01-2008", 1000L),
-                    new PaymentDto("johndoe@acme.com", "02-2008", 1000L),
-                    new PaymentDto("johndoe@acme.com", "03-2008", 1000L),
-                    new PaymentDto("johndoe@acme.com", "04-2008", 1000L)
-            ));
-
-            paymentsWithoutDistinctPeriodsAndNegativeSalary = new ArrayList<>(List.of(
-                    new PaymentDto("test@test.com", "01-2008", -1L),
-                    new PaymentDto("test@test.com", "02-2008", -1L),
-                    new PaymentDto("test@test.com", "04-2008", 1000L),
-                    new PaymentDto("test@test.com", "04-2008", 1000L),
-                    new PaymentDto("test@test.com", "05-2008", 1000L),
-                    new PaymentDto("test@test.com", "05-2008", 1000L),
-                    new PaymentDto("johndoe@acme.com", "01-2008", 1000L),
-                    new PaymentDto("johndoe@acme.com", "02-2008", 1000L),
-                    new PaymentDto("johndoe@acme.com", "03-2008", -1L),
-                    new PaymentDto("johndoe@acme.com", "03-2008", 1000L)
-            ));
-        }
-
-        @Test
-        void hasDistinctPeriods_ShouldBeTrue() {
-            assertTrue(serviceP
-                    .hasDistinctPeriods(
-                            paymentsWithDistinctPeriodsAndPositiveSalary));
-        }
-
-        @Test
-        void hasDistinctPeriods_ShouldThrowNoDistinctPeriodsException() {
-            assertThrows(DistinctPeriodException.class,
-                         () -> serviceP
-                                    .hasDistinctPeriods(
-                                            paymentsWithoutDistinctPeriodsAndNegativeSalary));
-        }
-
-
-        @Test
-        void hasPositiveSalary_ShouldBeTrue() {
-            assertTrue(serviceP
-                               .hasPositiveSalary(
-                                       paymentsWithDistinctPeriodsAndPositiveSalary.get(0)));
-        }
-
-        @Test
-        void hasPositiveSalary_ShouldBeFalse() {
-            assertFalse(serviceP
-                               .hasPositiveSalary(
-                                       paymentsWithoutDistinctPeriodsAndNegativeSalary.get(0)));
-        }
-    }
-  learner_created: false
+  learner_created: true
 feedback_link: https://hyperskill.org/learn/step/16607#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Well done! You've finished the project. Select a new project on <a href="https://hyperskill.org/projects">JetBrains
+    Academy</a> to continue learning.
+  time: Wed, 21 Sep 2022 18:58:01 UTC
 record: -1

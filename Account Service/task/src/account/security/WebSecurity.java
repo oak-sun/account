@@ -1,5 +1,6 @@
 package account.security;
 
+import account.security.auth.AuthManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
@@ -21,16 +22,17 @@ public class WebSecurity {
         http
                 .csrf()
                 .disable()
-                .httpBasic(h -> h
-                                .authenticationManager(manager)
-                                .authenticationEntryPoint(entryPoint))
+                .httpBasic(h ->
+                        h.authenticationManager(manager)
+                        .authenticationEntryPoint(entryPoint))
                 .authorizeExchange()
+
                 .pathMatchers("/api/auth/signup")
                 .permitAll()
 
                 .pathMatchers(HttpMethod.GET,
                         "/actuator",
-                                "/actuator/**")
+                                   "/actuator/**")
                 .permitAll()
 
                 .pathMatchers("/error", "/error/**")
@@ -48,13 +50,13 @@ public class WebSecurity {
                 .pathMatchers(HttpMethod.GET,
                         "/api/empl/payment")
                 .hasAnyRole("ACCOUNTANT", "USER")
-
                 .pathMatchers("/api/**")
                 .authenticated()
 
                 .and()
 
-                .exceptionHandling(ex -> ex.accessDeniedHandler(handler))
+                .exceptionHandling(ex ->
+                        ex.accessDeniedHandler(handler))
                 .formLogin();
         return http.build();
     }

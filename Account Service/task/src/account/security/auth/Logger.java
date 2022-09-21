@@ -1,4 +1,4 @@
-package account.security;
+package account.security.auth;
 
 import account.dao.AuditDao;
 import account.model.Audit;

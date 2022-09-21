@@ -1,5 +1,6 @@
-package account.security;
+package account.security.auth;
 
+import account.security.Protector;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UserDetailsRepositoryReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -7,7 +8,9 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import static account.security.messages.AuthMessages.*;
+
+import static account.security.messages.AuthMessages.PASSWORD_HACKED_ERRORMSG;
+import static account.security.messages.AuthMessages.passwordIsHacked;
 
 @Component
 public class AuthManager extends
@@ -32,9 +35,11 @@ public class AuthManager extends
                             PASSWORD_HACKED_ERRORMSG + " Please change!",
                     authentication.getName()));
         }
-        return super.authenticate(authentication)
-                .doOnSuccess(auth -> protector
-                                           .resetUserFailures(auth.getName()))
+        return super
+                .authenticate(authentication)
+                .doOnSuccess(auth ->
+                        protector.resetUserFailures(
+                                auth.getName()))
                 .onErrorMap(ex ->
                         new BadCredentialException(
                                 ex.getMessage(),

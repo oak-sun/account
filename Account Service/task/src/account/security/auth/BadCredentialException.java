@@ -1,4 +1,4 @@
-package account.security;
+package account.security.auth;
 
 import lombok.Getter;
 import org.springframework.security.authentication.BadCredentialsException;

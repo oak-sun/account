@@ -11,7 +11,7 @@ import account.model.records.request.RecordRequestUserLock;
 import account.model.records.response.RecordResponseSignup;
 import account.model.records.response.RecordResponseStatus;
 import account.model.records.response.RecordResponseUserDeleted;
-import account.security.Logger;
+import account.security.auth.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.data.domain.Sort;

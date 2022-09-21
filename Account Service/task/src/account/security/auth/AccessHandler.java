@@ -1,5 +1,6 @@
-package account.security;
+package account.security.auth;
 
+import account.security.auth.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
