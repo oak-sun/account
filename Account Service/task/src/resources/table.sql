@@ -1,49 +1,70 @@
 DROP TABLE IF EXISTS SALARY;
-DROP TABLE IF EXISTS USER_ROLES;
-DROP TABLE IF EXISTS USER;
+DROP TABLE IF EXISTS LOGIN_ROLES;
+DROP TABLE IF EXISTS USET;
 DROP TABLE IF EXISTS ROLES;
+DROP TABLE IF EXISTS AUDIT;
 
 CREATE TABLE IF NOT EXISTS USER (
                       id BIGINT AUTO_INCREMENT
                       PRIMARY KEY
-                       NOT NULL,
+                      NOT NULL,
                       name VARCHAR (64),
                       lastname VARCHAR (64),
                       email VARCHAR_IGNORECASE (64)
                       UNIQUE
-                       NOT NULL,
+                      NOT NULL,
                       password VARCHAR (128)
-                       NOT NULL
+                      NOT NULL,
+                      account_locked BOOL
+                      NOT NULL,
+                      failed_logins SMALLINT
 );
 
 CREATE TABLE IF NOT EXISTS SALARY (
                       id BIGINT AUTO_INCREMENT
-                       PRIMARY KEY
-                       NOT NULL,
+                      PRIMARY KEY
+                      NOT NULL,
                       email VARCHAR_IGNORECASE (64)
                       NOT NULL,
                       FOREIGN KEY(email)
                       REFERENCES USER(email),
-                      period VARCHAR (7) NOT NULL,
-                      salary BIGINT NOT NULL
+                      period VARCHAR (7)
+                      NOT NULL,
+                      salary BIGINT
+                      NOT NULL
 );
 CREATE TABLE IF NOT EXISTS ROLES (
                       id BIGINT AUTO_INCREMENT
-                       PRIMARY KEY
-                       NOT NULL,
+                      PRIMARY KEY
+                      NOT NULL,
                       user_role VARCHAR_IGNORECASE (20)
-                       UNIQUE NOT NULL
+                      UNIQUE
+                      NOT NULL
 );
+
 CREATE TABLE IF NOT EXISTS USER_ROLES (
                       id BIGINT AUTO_INCREMENT
                       PRIMARY KEY
-                       NOT NULL,
+                      NOT NULL,
                       email VARCHAR_IGNORECASE (64)
-                       NOT NULL,
+                      NOT NULL,
                       FOREIGN KEY(email)
                       REFERENCES USER(email),
                       user_role VARCHAR_IGNORECASE (20)
-                       NOT NULL,
+                      NOT NULL,
                       FOREIGN KEY(user_role)
                       REFERENCES ROLES(user_role)
+);
+CREATE TABLE IF NOT EXISTS AUDIT (
+                      id BIGINT AUTO_INCREMENT
+                      PRIMARY KEY
+                      NOT NULL,
+                      date DATE
+                      NOT NULL,
+                      action VARCHAR_IGNORECASE (20)
+                      NOT NULL,
+                      subject VARCHAR_IGNORECASE (64),
+                      object VARCHAR (128),
+                      path VARCHAR (64)
+                      NOT NULL
 );

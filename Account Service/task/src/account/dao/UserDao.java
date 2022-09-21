@@ -10,4 +10,13 @@ public interface UserDao extends ReactiveSortingRepository<User, Long> {
 
     Mono<User> findByEmail(String email);
     Mono<Void> deleteByEmail(String email);
+
+    default Mono<User> toggleLock(String email,
+                                  boolean lockRequested) {
+        return findByEmail(email)
+                .map(user -> user
+                                .setAccountLocked(lockRequested)
+                                .setFailedLogins(0))
+                .flatMap(this::save);
+    }
 }

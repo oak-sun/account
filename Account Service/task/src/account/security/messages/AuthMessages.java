@@ -17,24 +17,23 @@ public class AuthMessages {
     @Bean
     @Autowired
     public ReactiveUserDetailsService
-            userDetailsService(UserDao userDao,
-                               UserRoleDao userRoleDao) {
+                                     userDetailsService(UserDao userDao,
+                                                        UserRoleDao userRoleDao) {
         return email ->
                 userDao
                 .findByEmail(email)
                 .zipWith(userRoleDao.findRolesByEmail(email),
                           User::setRoles);
     }
-
     @Bean
     public PasswordEncoder getEncoder() {
-        return new BCryptPasswordEncoder(BCRYPT_STRENGTH);
+        return new BCryptPasswordEncoder(
+                BCRYPT_STRENGTH);
     }
-
     public static boolean passwordIsHacked(String password) {
-        return breachedPasswords.contains(password);
+        return breachedPasswords
+                .contains(password);
     }
-
     private static final Set<String> breachedPasswords = Set.of(
             "PasswordForJanuary",
             "PasswordForFebruary",
@@ -48,27 +47,18 @@ public class AuthMessages {
             "PasswordForOctober",
             "PasswordForNovember",
             "PasswordForDecember");
-
-    public static final int BCRYPT_STRENGTH = 8;
-
+    public static final int BCRYPT_STRENGTH = 13;
     public static final int MIN_PASSWORD_LENGTH = 12;
-
-    public static final String EMAIL_REGEX =
-            "(?i)\\w+(\\.\\w+){0,2}@acme.com";
-
+    public static final String EMAIL_REGEX = "(?i)\\w+(\\.\\w+){0,2}@acme.com";
     public static final String USER_EXISTS_ERRORMSG = "User exist!";
-
     public static final String PASSWORD_TOO_SHORT_ERRORMSG =
-            "The password length must be at least "
-            + MIN_PASSWORD_LENGTH +
+            "The password length must be at least " +
+                    MIN_PASSWORD_LENGTH +
                     " chars!";
-
     public static final String PASSWORD_HACKED_ERRORMSG =
             "The password is in the hacker's database!";
-
-    public static final String SAME_PASSWORD_ERRORMSG = "" +
+    public static final String SAME_PASSWORD_ERRORMSG =
             "The passwords must be different!";
-
     public static final String PASSWORD_UPDATEMSG =
             "The password has been updated successfully";
 }

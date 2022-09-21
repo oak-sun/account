@@ -9,18 +9,15 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
+import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Entity class connected to R2DBC-Table LOGIN, that implements the UserDetails interface of Spring Security.
- */
 @Data
 @Builder
 @Accessors(chain = true)
@@ -29,10 +26,8 @@ import java.util.List;
 @Table("USER")
 public class User implements UserDetails {
 
-    private static final User UNKNOWN = User
-            .builder()
-            .id(-1)
-            .build();
+    private static final User UNKNOWN =
+            User.builder().id(-1).build();
 
     @Id
     private long id;
@@ -40,27 +35,34 @@ public class User implements UserDetails {
     private String lastname;
     private String email;
     private String password;
+    @Column("account_locked")
+    @Builder.Default()
+    private boolean accountLocked = false;
+
+    @Column("failed_logins")
+    @Builder.Default()
+    private int failedLogins = 0;
 
     @Builder.Default()
     @Transient
     private List<String> roles = new ArrayList<>();
 
     public static User fromSignupRequest(RecordRequestSignup request,
-                                         String encryptedPassword) {
+                                         String encrPass) {
         return User
-                .builder()
-                .name(request.name())
-                .lastname(request.lastname())
-                .email(request.email())
-                .password(encryptedPassword)
-                .build();
+                   .builder()
+                   .name(request.name())
+                   .lastname(request.lastname())
+                   .email(request.email())
+                   .password(encrPass)
+                   .build();
     }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return AuthorityUtils
-                .createAuthorityList(roles.toArray(
-                        String[]::new));
+                .createAuthorityList(
+                                 roles.toArray(String[]::new));
     }
 
     @Override
@@ -75,7 +77,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !accountLocked;
     }
 
     @Override
